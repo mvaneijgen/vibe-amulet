@@ -1,118 +1,132 @@
-#include "melody/tetris.h"
-#include "melody/mario.h"
-#include "melody/starwars.h"
+#include "melody/melody_player.h"
 
-const int buttonPin = 0;  // GPIO 0 (BOOT button on most ESP32 boards)
-const int vibrationPin = 13; // Set connection pin to signal pin of vibration module
+//--------------------------------//
+// Pin Selection 
+//--------------------------------//
+const int buttonPin = 0;
+const int vibrationPin = 13;
+const int ledPin = 2;
+// END Pin Selection  --------------//
 
-#include "melody/pitches.h" // Include pitches.h in the main script
+//--------------------------------//
+// User preferences  
+//--------------------------------//
+const int melodyPicked = 0;
+const unsigned long timer = 60000;
+const unsigned long buttonHoldTime = 3000;  // 3 seconds
+// END User preferences  --------------//
 
-// Array of melodies
-const int* melodies[] = {
-  tetris::melody,
-  mario::melody,
-  starwars::melody
-};
+//--------------------------------//
+// State management 
+//--------------------------------//
+bool isMelodyPlaying = false;
+bool timerAlmostDone = false;
+unsigned long timerStartTime = 0;
+unsigned long buttonPressStart = 0;
+bool buttonHeld = false;
+// END State management  --------------//
 
-const int tempos[] = {
-  tetris::tempo,
-  mario::tempo,
-  starwars::tempo
-};
+const unsigned long breathCycle = 2000;
 
-const int notes[] = {
-  sizeof(tetris::melody) / sizeof(tetris::melody[0]) / 2,
-  sizeof(mario::melody) / sizeof(mario::melody[0]) / 2,
-  sizeof(starwars::melody) / sizeof(starwars::melody[0]) / 2
-};
-
-// Variables for state management
-bool isMelodyPlaying = false; // Tracks if the melody is currently playing
-bool buttonPressed = false;   // Tracks if the button is pressed
-unsigned long timerStartTime = 0; // Tracks when the timer starts
-const unsigned long oneMinute = 60000; // One minute in milliseconds
-
+//--------------------------------//
+// Setup  
+//--------------------------------//
 void setup() {
-  // Initialize Serial Monitor
   Serial.begin(115200);
-
-  // Set the button pin as input
   pinMode(buttonPin, INPUT);
-  pinMode(vibrationPin, OUTPUT); // Set pin as output
-  digitalWrite(vibrationPin, LOW); // Set pin low to make sure vibration motor is off
-}
-
-void playMelody(const int melody[], int notes, int tempo) {
-  int wholenote = (60000 * 4) / tempo;
-  int divider = 0, noteDuration = 0;
-
-  for (int thisNote = 0; thisNote < notes * 2; thisNote += 2) {
-    divider = melody[thisNote + 1];
-    if (divider > 0) {
-      noteDuration = wholenote / divider;
-    } else if (divider < 0) {
-      noteDuration = wholenote / abs(divider);
-      noteDuration *= 1.5;
-    }
-
-    // Vibrate the motor for notes (pulses)
-    if (melody[thisNote] != REST) {
-      digitalWrite(vibrationPin, HIGH);
-    }
-    delay(noteDuration * 0.9); // Play the note for 90% of the duration
-    digitalWrite(vibrationPin, LOW); // Turn off the motor
-    delay(noteDuration * 0.1); // Pause for 10% of the duration
+  pinMode(vibrationPin, OUTPUT);
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(vibrationPin, LOW);
+  digitalWrite(ledPin, LOW);
+  delay(2500); // wait a moment before starting
+  
+  // 5 times blink to indicate the device is ready
+  for (int i = 0; i < 5; i++) {
+    digitalWrite(ledPin, HIGH);
+    delay(200);
+    digitalWrite(ledPin, LOW);
+    delay(200);
   }
+  
+  Serial.println("Device is ready.");
+  Serial.flush();
 }
+// END Setup  --------------//
 
+//--------------------------------//
+// Main script  
+//--------------------------------//
 void loop() {
-  // Read the button state
   int buttonState = digitalRead(buttonPin);
 
-  // Check if the button is pressed (LOW because the button is active-low)
-  if (buttonState == LOW && !buttonPressed) {
-    buttonPressed = true; // Mark button as pressed
+  // Log button press once when pressed and held
+  if (buttonState == LOW && buttonPressStart == 0) {
+    buttonPressStart = millis();
+    Serial.println("Button pressed.");
+  }
 
-    if (!isMelodyPlaying) {
-      // Give a small pulse to the motor
-      digitalWrite(vibrationPin, HIGH);
-      delay(100); // Small pulse duration
-      digitalWrite(vibrationPin, LOW);
-
-      // Start the timer for one minute only if the melody is not already playing
-      if (timerStartTime == 0) {
-        timerStartTime = millis();
-        Serial.println("Timer started. Melody will play in one minute.");
+  // Check if the melody is playing
+  if (isMelodyPlaying) {
+    // Button is pressed, check if held for long enough to stop melody
+    if (buttonState == LOW) {
+      // Check if button has been held for the defined time
+        for (int i = 0; i < 5; i++) {
+    digitalWrite(ledPin, HIGH);
+    delay(200);
+    digitalWrite(ledPin, LOW);
+    delay(200);
+  }
+      if (millis() - buttonPressStart >= buttonHoldTime && !buttonHeld) {
+        buttonHeld = true; // mark button as held
+        isMelodyPlaying = false;
+        Serial.println("Melody stopped by button hold!");
+        delay(10000); // wait before state can change again
+        Serial.println("State reset. Melody is stopped, ready to start again.");
       }
-    } else {
-      // Stop the melody and reset the state
-      isMelodyPlaying = false;
-      timerStartTime = 0; // Reset the timer
-      Serial.println("Melody stopped.");
     }
+    return;  // exit if melody is playing
   }
 
-  // Reset button state when released
-  if (buttonState == HIGH && buttonPressed) {
-    buttonPressed = false;
+  // If the button is pressed and the timer hasn't started, start the timer
+  if (buttonState == LOW && timerStartTime == 0 && !isMelodyPlaying) {
+    timerStartTime = millis();
+    Serial.println("Timer started");
+    Serial.print("Button State: ");
+    Serial.print(buttonState == LOW ? "Pressed" : "Released");
+    Serial.print(" | Melody Playing: ");
+    Serial.print(isMelodyPlaying ? "Yes" : "No");
+    Serial.print(" | Timer Start: ");
+    Serial.println(timerStartTime != 0 ? "Active" : "Inactive");
   }
 
-  // Check if one minute has passed and the melody is not already playing
-  if (!isMelodyPlaying && timerStartTime != 0 && millis() - timerStartTime >= oneMinute) {
-    isMelodyPlaying = true; // Start playing the melody
-    timerStartTime = 0; // Reset the timer
+  if (timerStartTime != 0) {
+    unsigned long elapsed = millis() - timerStartTime;
 
-    // Randomly select a melody
-    int melodyIndex = 1; // 0 = Tetris, 1 = Mario, 2 = Star Wars
-    Serial.println("One minute passed. Playing melody...");
+    if (elapsed >= timer) {
+      isMelodyPlaying = true;
+      timerStartTime = 0;
+      Serial.println("Timer elapsed: Playing melody...");
+      playMelody(melodyPicked);
+    } else if (elapsed >= timer * 0.9) {  
+      if (!timerAlmostDone) {
+        timerAlmostDone = true;
+        Serial.println("Timer almost done.");
+      }
+      int pulseDuration = map(elapsed, timer * 0.9, timer, 50, 500);
+      int pauseDuration = map(elapsed, timer * 0.9, timer, 500, 50);
+      
+      digitalWrite(vibrationPin, HIGH);
+      delay(pulseDuration);
+      digitalWrite(vibrationPin, LOW);
+      delay(pauseDuration);
+    }
 
-    // Play the selected melody
-    playMelody(melodies[melodyIndex], notes[melodyIndex], tempos[melodyIndex]);
-
-    // Reset the melody state after playing
-    isMelodyPlaying = false;
+    int ledBrightness = (exp(sin(millis() * (PI / breathCycle))) - 0.367879) * 108;
+    analogWrite(ledPin, ledBrightness);
+  } else {
+    digitalWrite(ledPin, LOW);
   }
 
-  // Add a small delay to avoid bouncing
-  delay(10);
+  delay(10); // debounce delay
 }
+// END Main script  --------------//
