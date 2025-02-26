@@ -6,22 +6,14 @@
 unsigned long lastDebugUpdate = 0;
 const unsigned long DEBUG_INTERVAL = 2000; // 2 seconds between updates
 
-String getFormattedTime() {
-  // Calculate current time based on millis() and initial time
+String getFormattedRunningTime() {
   unsigned long currentMillis = millis();
-  // Start from 11:43 UTC+1
-  unsigned long initialHours = 11;
-  unsigned long initialMinutes = 43;
+  unsigned long totalSeconds = currentMillis / 1000;
+  unsigned long minutes = totalSeconds / 60;
+  unsigned long seconds = totalSeconds % 60;
 
-  unsigned long totalMinutes =
-      (currentMillis / 60000) +
-      initialMinutes; // Convert millis to minutes and add initial minutes
-  unsigned long hours = (totalMinutes / 60 + initialHours) %
-                        24; // Add initial hours and wrap around 24
-  unsigned long minutes = totalMinutes % 60;
-
-  char timeStr[9];
-  sprintf(timeStr, "%02lu:%02lu", hours, minutes);
+  char timeStr[6];
+  sprintf(timeStr, "%02lu:%02lu", minutes, seconds);
   return String(timeStr);
 }
 
@@ -33,9 +25,8 @@ void printDebugInfo(int buttonState, bool isMelodyPlaying,
   if (currentMillis - lastDebugUpdate >= DEBUG_INTERVAL) {
     lastDebugUpdate = currentMillis;
 
-    Serial.print("[");
-    Serial.print(getFormattedTime());
-    Serial.print("] ");
+    Serial.print(getFormattedRunningTime());
+    Serial.print(" | Button: ");
     Serial.print(buttonState == LOW ? "Pressed" : "Released");
     Serial.print(" | Melody: ");
     Serial.print(isMelodyPlaying ? "Playing" : "Stopped");

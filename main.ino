@@ -114,20 +114,14 @@ void loop() {
       currentEffect = OFF;
       ledFlashing(200, -1);
     } else if (remaining <= timer * 0.1) {
-      // Serial.println("Timer almost done.");
-      // ledStep();
-
-      // ? can this be removed?
-      if (!timerAlmostDone) {
-        timerAlmostDone = true;
-        Serial.println("Timer almost done.");
-        ledStep();
-      }
 
       int pulseDuration = map(remaining, timer * 0.1, 0, 50, 500);
       int pauseDuration = map(remaining, timer * 0.1, 0, 500, 50);
       unsigned long currentMillis = millis();
       if (isVibrating && currentMillis - lastVibrationUpdate >= pulseDuration) {
+        Serial.println("Timer almost done.");
+        ledStep();
+
         digitalWrite(vibrationPin, LOW);
         isVibrating = false;
         lastVibrationUpdate = currentMillis;
@@ -140,8 +134,5 @@ void loop() {
     }
   }
   // END 🎶 Play melody if timer is done --------------//
-  // ? remove?
-  updateLEDEffect();
-
   delay(100);
 }
