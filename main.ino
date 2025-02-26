@@ -38,19 +38,12 @@ void setup() {
   pinMode(LED_PIN, OUTPUT); 
   digitalWrite(vibrationPin, LOW);
 
-  // Indicate ESP32 is ready with blink sequence
-  digitalWrite(LED_PIN, HIGH);
-  delay(200);
-  digitalWrite(LED_PIN, LOW);
-  delay(200);
-  digitalWrite(LED_PIN, HIGH);
-  delay(200);
-  digitalWrite(LED_PIN, LOW);
-  delay(200);
-  digitalWrite(LED_PIN, HIGH);
-  delay(200);
-  digitalWrite(LED_PIN, LOW);
-
+for (int i = 0; i < 3; i++) {
+    digitalWrite(LED_PIN, HIGH);
+    delay(200);
+    digitalWrite(LED_PIN, LOW);
+    delay(200);
+}
 }
 // END Setup  --------------//
 
