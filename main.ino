@@ -19,7 +19,6 @@ const unsigned long buttonHoldTime = 3000;
 //--------------------------------//
 // State managment
 //--------------------------------//
-bool startup = false;  // Add a flag to indicate initial blinking is done
 bool isMelodyPlaying = false;
 bool timerAlmostDone = false;
 unsigned long timerStartTime = 0;
@@ -38,6 +37,20 @@ void setup() {
   pinMode(vibrationPin, OUTPUT);
   pinMode(LED_PIN, OUTPUT); 
   digitalWrite(vibrationPin, LOW);
+
+  // Indicate ESP32 is ready with blink sequence
+  digitalWrite(LED_PIN, HIGH);
+  delay(200);
+  digitalWrite(LED_PIN, LOW);
+  delay(200);
+  digitalWrite(LED_PIN, HIGH);
+  delay(200);
+  digitalWrite(LED_PIN, LOW);
+  delay(200);
+  digitalWrite(LED_PIN, HIGH);
+  delay(200);
+  digitalWrite(LED_PIN, LOW);
+
 }
 // END Setup  --------------//
 
@@ -51,10 +64,8 @@ void loop() {
   // Play melody if it's active
   playMelody();
 
-  if(!startup) {
-    startup = true;
-    ledFlashing(200, 3);  // Initial 3 blinks
-  }
+  static unsigned long lastVibrationUpdate = 0;
+  static bool isVibrating = false;
 
   int buttonState = digitalRead(buttonPin);
   static unsigned long buttonPressStart = 0;
@@ -76,7 +87,6 @@ void loop() {
       ledOff();  // Ensure LED is off
       buttonHeld = false;
       systemReset = true;
-      startup = true;  // Reset startup state to enable breathing effect after reset
     }
   } else {
     buttonHeld = false;
@@ -100,26 +110,44 @@ void loop() {
 
   // Play melody if timer is done
   if (timerStartTime != 0) {
-    unsigned long elapsed = millis() - timerStartTime;
+    unsigned long elapsed = millis();
+    unsigned long remaining = timer - (elapsed - timerStartTime);
 
-    if (elapsed >= timer) {
-      // Timer is done start playing
+    if (remaining <= 0) {
+      // Timer is done, start playing melody
       isMelodyPlaying = true;
       timerStartTime = 0;
       Serial.println("Timer elapsed. Playing melody...");
-      ledFlashing(200);
-      playMelody();
+      
+      // Force LED effect reset and start flashing
+      ledOff();
+      delay(10);  // Small delay to ensure the LED state is reset
+      ledFlashing(200, -1);  // -1 means continuous flashing
+      
       printDebugInfo(buttonState, isMelodyPlaying, timerStartTime);
-    } else if (elapsed >= timer * 0.9) {
+    } else if (remaining <= timer * 0.1) {  // Last 10% of timer
       // Timer almost done
       if (!timerAlmostDone) {
         timerAlmostDone = true;
         Serial.println("Timer almost done.");
+        ledStep();
       }
-      int pulseDuration = map(elapsed, timer * 0.9, timer, 50, 500);
-      int pauseDuration = map(elapsed, timer * 0.9, timer, 500, 50);
 
-      ledStep();
+      // Calculate pulse and pause durations
+      int pulseDuration = map(remaining, timer * 0.1, 0, 50, 500);
+      int pauseDuration = map(remaining, timer * 0.1, 0, 500, 50);
+      
+      // Non-blocking vibration pattern
+      unsigned long currentMillis = millis();
+      if (isVibrating && currentMillis - lastVibrationUpdate >= pulseDuration) {
+        digitalWrite(vibrationPin, LOW);
+        isVibrating = false;
+        lastVibrationUpdate = currentMillis;
+      } else if (!isVibrating && currentMillis - lastVibrationUpdate >= pauseDuration) {
+        digitalWrite(vibrationPin, HIGH);
+        isVibrating = true;
+        lastVibrationUpdate = currentMillis;
+      }
     }
   }
 
