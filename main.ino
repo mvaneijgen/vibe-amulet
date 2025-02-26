@@ -112,10 +112,11 @@ void loop() {
       timerStartTime = 0;
       Serial.println("Timer elapsed. Playing melody...");
       
-      // Force LED effect reset and start flashing
-      ledOff();
-      delay(10);  // Small delay to ensure the LED state is reset
-      ledFlashing(200, -1);  // -1 means continuous flashing
+      // Force complete LED reset before starting flash
+      pinMode(LED_PIN, OUTPUT);
+      digitalWrite(LED_PIN, LOW);
+      currentEffect = OFF;  // Reset current effect
+      ledFlashing(200, -1);  // Start continuous flashing
       
       printDebugInfo(buttonState, isMelodyPlaying, timerStartTime);
     } else if (remaining <= timer * 0.1) {  // Last 10% of timer
@@ -143,6 +144,9 @@ void loop() {
       }
     }
   }
+
+  // Ensure LED effect is updated frequently
+  updateLEDEffect();
 
   delay(100);
 }

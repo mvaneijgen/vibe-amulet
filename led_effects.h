@@ -49,25 +49,38 @@ void ledOff() {
 }
 
 void setLEDEffect(LEDEffect effect, int interval, int times) {
+    if (currentEffect == effect && effect != FLASHING) return;  // Don't restart same effect except for flashing
+    
     currentEffect = effect;
-    lastUpdate = 0;  // Reset the timer
+    lastUpdate = millis();
     blinkTimes = times;
     blinkCount = 0;
-    ledState = false;  // Start with LED off
+    ledState = false;
+    flashInterval = interval;
     
-    if (effect == OFF) {
-        digitalWrite(LED_PIN, LOW);
-        analogWrite(LED_PIN, 0);
-        brightness = 0;
-        fadeAmount = 5;
-    } else if (effect == FLASHING) {
-        flashInterval = interval;
-        digitalWrite(LED_PIN, LOW);  // Ensure LED starts in known state
-    } else if (effect == BREATHING) {
-        brightness = 0;
-        fadeAmount = 5;
-    } else if (effect == STEP) {
-        brightness = 0;
+    // Reset LED state
+    switch (effect) {
+        case OFF:
+            pinMode(LED_PIN, OUTPUT);
+            digitalWrite(LED_PIN, LOW);
+            analogWrite(LED_PIN, 0);
+            brightness = 0;
+            break;
+        case FLASHING:
+            pinMode(LED_PIN, OUTPUT);
+            digitalWrite(LED_PIN, LOW);
+            break;
+        case BREATHING:
+            pinMode(LED_PIN, OUTPUT);
+            brightness = 0;
+            fadeAmount = 5;
+            analogWrite(LED_PIN, brightness);
+            break;
+        case STEP:
+            pinMode(LED_PIN, OUTPUT);
+            brightness = 0;
+            analogWrite(LED_PIN, brightness);
+            break;
     }
 }
 
@@ -102,20 +115,21 @@ void updateLEDEffect() {
             if (currentMillis - lastUpdate >= flashInterval) {
                 lastUpdate = currentMillis;
                 ledState = !ledState;
-                digitalWrite(LED_PIN, ledState);  // Simplified LED state setting
+                pinMode(LED_PIN, OUTPUT);  // Ensure pin is in correct mode
+                digitalWrite(LED_PIN, ledState ? HIGH : LOW);
                 
                 if (blinkTimes > 0) {
                     blinkCount++;
                     if (blinkCount >= blinkTimes * 2) {
-                        ledOff();  // Use ledOff() instead of direct state change
+                        setLEDEffect(OFF);
                     }
                 }
             }
             break;
             
         case OFF:
+            pinMode(LED_PIN, OUTPUT);
             digitalWrite(LED_PIN, LOW);
-            analogWrite(LED_PIN, 0);
             break;
     }
 }
