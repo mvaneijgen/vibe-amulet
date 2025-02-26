@@ -19,6 +19,7 @@ const unsigned long buttonHoldTime = 3000;
 //--------------------------------//
 // State managment
 //--------------------------------//
+bool startup = false;  // Add a flag to indicate initial blinking is done
 bool isMelodyPlaying = false;
 bool timerAlmostDone = false;
 unsigned long timerStartTime = 0;
@@ -35,10 +36,8 @@ void setup() {
   Serial.begin(115200);
   pinMode(buttonPin, INPUT);
   pinMode(vibrationPin, OUTPUT);
-  pinMode(LED_PIN, OUTPUT);  // Initialize the LED pin
+  pinMode(LED_PIN, OUTPUT); 
   digitalWrite(vibrationPin, LOW);
-  
-  // Blink a few times to indicate the ESP32 is ready
 }
 // END Setup  --------------//
 
@@ -46,6 +45,17 @@ void setup() {
 // Main script
 //--------------------------------//
 void loop() {
+  // Update LED effects continuously
+  updateLEDEffect();
+
+  // Play melody if it's active
+  playMelody();
+
+  if(!startup) {
+    startup = true;
+    ledFlashing(200, 3);  // Initial 3 blinks
+  }
+
   int buttonState = digitalRead(buttonPin);
   static unsigned long buttonPressStart = 0;
   static bool buttonHeld = false;
@@ -63,9 +73,10 @@ void loop() {
       timerAlmostDone = false;
       melodyIndex = 0;
       digitalWrite(vibrationPin, LOW);
-      ledOff();
+      ledOff();  // Ensure LED is off
       buttonHeld = false;
-      systemReset = true;  // Set the system reset flag
+      systemReset = true;
+      startup = true;  // Reset startup state to enable breathing effect after reset
     }
   } else {
     buttonHeld = false;

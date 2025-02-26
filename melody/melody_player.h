@@ -10,29 +10,39 @@ const unsigned int melody[] = { 125, 125, 125, 125, 125, 325, 250, 250, 250, 325
 
 unsigned long lastMelodyUpdate = 0;
 int melodyIndex = 0;
-bool melodyDelay = false;
+bool isVibrating = false;
+bool waitingForNextSequence = false;
+unsigned long sequenceStartTime = 0;
 
 void playMelody() {
-  if (isMelodyPlaying) {
-    unsigned long currentMillis = millis();
-    if (melodyDelay) {
-      if (currentMillis - lastMelodyUpdate >= 1000) {  // 1 second delay between repetitions
-        melodyDelay = false;
-        melodyIndex = 0;
-        lastMelodyUpdate = currentMillis;
-      }
-    } else {
-      if (currentMillis - lastMelodyUpdate >= melody[melodyIndex]) {
-        lastMelodyUpdate = currentMillis;
-        if (melodyIndex % 2 == 0) digitalWrite(vibrationPin, HIGH);
-        else digitalWrite(vibrationPin, LOW);
-        melodyIndex++;
-        if (melodyIndex >= 16) {
-          melodyDelay = true;
-          digitalWrite(vibrationPin, LOW);
-        }
-      }
+  if (!isMelodyPlaying) {
+    digitalWrite(vibrationPin, LOW);
+    return;
+  }
+
+  unsigned long currentMillis = millis();
+
+  if (waitingForNextSequence) {
+    if (currentMillis - sequenceStartTime >= 2000) {  // Wait 2 seconds between sequences
+      waitingForNextSequence = false;
+      melodyIndex = 0;
+      isVibrating = false;
     }
+    return;
+  }
+
+  if (melodyIndex >= 16) {
+    waitingForNextSequence = true;
+    sequenceStartTime = currentMillis;
+    digitalWrite(vibrationPin, LOW);
+    return;
+  }
+
+  if (currentMillis - lastMelodyUpdate >= melody[melodyIndex]) {
+    lastMelodyUpdate = currentMillis;
+    isVibrating = !isVibrating;
+    digitalWrite(vibrationPin, isVibrating ? HIGH : LOW);
+    melodyIndex++;
   }
 }
 

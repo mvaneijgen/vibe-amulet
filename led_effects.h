@@ -24,60 +24,74 @@ int blinkCount = 0;
 int blinkTimes = -1;  // -1 means blink indefinitely
 
 void setLEDEffect(LEDEffect effect, int interval = 500, int times = -1) {
-    if (currentEffect != effect) {
-        currentEffect = effect;
-        lastUpdate = millis();
+    currentEffect = effect;
+    lastUpdate = millis();
+    blinkTimes = times;
+    blinkCount = 0;
+    ledState = false;
+    
+    if (effect == OFF) {
+        digitalWrite(LED_PIN, LOW);
+        analogWrite(LED_PIN, 0);
         brightness = 0;
         fadeAmount = 5;
-        blinkCount = 0;
-        blinkTimes = times;
-        if (effect == OFF) {
-            digitalWrite(LED_PIN, LOW);
-        } else if (effect == FLASHING) {
-            flashInterval = interval;
-        }
-    } else if (effect == OFF) {
-        digitalWrite(LED_PIN, LOW);
+    } else if (effect == FLASHING) {
+        flashInterval = interval;
+        ledState = false;
+    } else if (effect == BREATHING) {
+        brightness = 0;
+        fadeAmount = 5;
+    } else if (effect == STEP) {
+        brightness = 0;
     }
 }
 
 void updateLEDEffect() {
     unsigned long currentMillis = millis();
+    
     switch (currentEffect) {
         case BREATHING:
-            if (currentMillis - lastUpdate > 30) {
+            if (currentMillis - lastUpdate >= 30) {
                 lastUpdate = currentMillis;
+                analogWrite(LED_PIN, brightness);
                 brightness += fadeAmount;
+                
                 if (brightness <= 0 || brightness >= 255) {
                     fadeAmount = -fadeAmount;
                 }
-                analogWrite(LED_PIN, brightness);
+                
+                // Ensure brightness stays within bounds
+                brightness = constrain(brightness, 0, 255);
             }
             break;
+            
         case STEP:
-            if (currentMillis - lastUpdate > 300) {
+            if (currentMillis - lastUpdate >= 300) {
                 lastUpdate = currentMillis;
-                brightness += 51;
-                if (brightness > 255) brightness = 0;
                 analogWrite(LED_PIN, brightness);
+                brightness = (brightness + 51) % 256;  // Increment by 51 (255/5) for 5 steps
             }
             break;
+            
         case FLASHING:
-            if (currentMillis - lastUpdate > flashInterval) {
+            if (currentMillis - lastUpdate >= flashInterval) {
                 lastUpdate = currentMillis;
                 ledState = !ledState;
                 digitalWrite(LED_PIN, ledState ? HIGH : LOW);
+                
                 if (blinkTimes > 0) {
                     blinkCount++;
-                    if (blinkCount >= blinkTimes * 2) {  // Each blink consists of two states (HIGH and LOW)
-                        setLEDEffect(OFF);
+                    if (blinkCount >= blinkTimes * 2) {
+                        currentEffect = OFF;
+                        digitalWrite(LED_PIN, LOW);
                     }
                 }
             }
             break;
+            
         case OFF:
-        default:
             digitalWrite(LED_PIN, LOW);
+            analogWrite(LED_PIN, 0);
             break;
     }
 }
@@ -95,7 +109,18 @@ void ledFlashing(int interval = 500, int times = -1) {
 }
 
 void ledOff() {
-    setLEDEffect(OFF);
+    // Force LED off immediately
+    digitalWrite(LED_PIN, LOW);
+    analogWrite(LED_PIN, 0);
+    
+    // Reset all LED-related variables
+    currentEffect = OFF;
+    brightness = 0;
+    ledState = false;
+    blinkCount = 0;
+    blinkTimes = -1;
+    fadeAmount = 5;
+    lastUpdate = millis();
 }
 
 #endif
