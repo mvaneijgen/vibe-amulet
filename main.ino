@@ -1,6 +1,6 @@
-#include "debug.h" // Include the debug header
+#include "debug.h"
 #include "led_effects.h"
-#include "melody/melody_player.h"
+#include "melody_player.h"
 //--------------------------------//
 // 📍 Pin Selection
 //--------------------------------//
@@ -22,10 +22,9 @@ const unsigned long buttonHoldTime = 3000;
 bool isMelodyPlaying = false;
 bool timerAlmostDone = false;
 unsigned long timerStartTime = 0;
-bool systemReset = false; // Add a flag to indicate system reset
-bool initialBlinkingDone =
-    false;                    // Add a flag to indicate initial blinking is done
-bool startupComplete = false; // New flag to track startup sequence
+bool systemReset = false;
+bool initialBlinkingDone = false;
+bool startupComplete = false;
 
 static unsigned long lastVibrationUpdate = 0;
 static bool isVibrating = false;
@@ -44,6 +43,8 @@ void setup() {
   pinMode(vibrationPin, OUTPUT);
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(vibrationPin, LOW);
+  selectMelody("longBuzz");
+
   // 🚨 Blink a few times when ready
   for (int i = 0; i < 3; i++) {
     digitalWrite(LED_PIN, HIGH);
@@ -71,7 +72,7 @@ void loop() {
       buttonHeld = true;
     } else if (millis() - buttonPressStart > buttonHoldTime) {
       Serial.println("Button held down, stopping melody");
-      // Reset state back to nomral
+      // Reset state back to normal
       isMelodyPlaying = false;
       timerAlmostDone = false;
       buttonHeld = false;
@@ -87,8 +88,7 @@ void loop() {
   //--------------------------------//
   // Start ⏱️ timer
   //--------------------------------//
-  if (buttonState == LOW && timerStartTime == 0 && !isMelodyPlaying &&
-      !systemReset) {
+  if (buttonState == LOW && timerStartTime == 0 && !isMelodyPlaying && !systemReset) {
     timerStartTime = millis();
     Serial.println("Timer started");
     digitalWrite(vibrationPin, HIGH);
@@ -114,7 +114,6 @@ void loop() {
       currentEffect = OFF;
       ledFlashing(200, -1);
     } else if (remaining <= timer * 0.1) {
-
       int pulseDuration = map(remaining, timer * 0.1, 0, 50, 500);
       int pauseDuration = map(remaining, timer * 0.1, 0, 500, 50);
       unsigned long currentMillis = millis();
