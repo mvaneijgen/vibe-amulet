@@ -1,0 +1,150 @@
+#include "debug.h"
+#include "led_effects.h"
+#include "melody_player.h"
+//--------------------------------//
+// 📍 Pin Selection
+//--------------------------------//
+const int buttonPin = 0;
+const int vibrationPin = 13;
+// END Pin Selection --------------//
+
+//--------------------------------//
+// 🧑‍💻 User preferences
+//--------------------------------//
+const int melodyPicked = 0;
+const unsigned long timer = 10000;
+const unsigned long buttonHoldTime = 3000;
+// END User preferences  --------------//
+
+//--------------------------------//
+// 🧮 State management
+//--------------------------------//
+bool isMelodyPlaying = false;
+bool timerAlmostDone = false;
+unsigned long timerStartTime = 0;
+bool systemReset = false;
+bool initialBlinkingDone = false;
+bool startupComplete = false;
+static unsigned long lastVibrationUpdate = 0;
+static bool isVibrating = false;
+static unsigned long buttonPressStart = 0;
+static bool buttonHeld = false;
+// END State management --------------//
+
+//--------------------------------//
+// ⚙️ Setup
+//--------------------------------//
+void setup() {
+  Serial.begin(115200);
+  pinMode(buttonPin, INPUT);
+  pinMode(vibrationPin, OUTPUT);
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(vibrationPin, LOW);
+  selectMelody("longBuzz");
+
+  // 🚨 Blink a few times when ready
+  for (int i = 0; i < 3; i++) {
+    digitalWrite(LED_PIN, HIGH);
+    delay(200);
+    digitalWrite(LED_PIN, LOW);
+    delay(200);
+  }
+}
+// END Setup  --------------//
+
+//--------------------------------//
+// ⏱️ Start timer
+//--------------------------------//
+void startTimer(int buttonState) {
+  if (buttonState == LOW && timerStartTime == 0 && !isMelodyPlaying && !systemReset) {
+    timerStartTime = millis();
+    Serial.println("Timer started");
+    digitalWrite(vibrationPin, HIGH);
+    delay(300);
+    digitalWrite(vibrationPin, LOW);
+    ledBreathing();
+  }
+}
+// END ⏱️ Start timer --------------//
+
+//--------------------------------//
+// 🎶 Melody logic
+//--------------------------------//
+void handleTimerElapsed() {
+  Serial.println("Timer elapsed. Playing melody...");
+  isMelodyPlaying = true;
+  timerStartTime = 0;
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
+  currentEffect = OFF;
+  ledFlashing(200, -1);
+}
+
+void handleTimerAlmostDone(unsigned long remaining) {
+  int pulseDuration = map(remaining, timer * 0.1, 0, 50, 500);
+  int pauseDuration = map(remaining, timer * 0.1, 0, 500, 50);
+  unsigned long currentMillis = millis();
+  if (isVibrating && currentMillis - lastVibrationUpdate >= pulseDuration) {
+    Serial.println("Timer almost done.");
+    ledStep();
+    digitalWrite(vibrationPin, LOW);
+    isVibrating = false;
+    lastVibrationUpdate = currentMillis;
+  } else if (!isVibrating && currentMillis - lastVibrationUpdate >= pauseDuration) {
+    digitalWrite(vibrationPin, HIGH);
+    isVibrating = true;
+    lastVibrationUpdate = currentMillis;
+  }
+}
+
+void playMelodyIfTimerDone() {
+  if (timerStartTime != 0) {
+    unsigned long elapsed = millis();
+    unsigned long remaining = timer - (elapsed - timerStartTime);
+
+    if (remaining <= 0) {
+      handleTimerElapsed();
+    } else if (remaining <= timer * 0.1) {
+      handleTimerAlmostDone(remaining);
+    }
+  }
+}
+// END 🎶 Melody logic  --------------//
+
+//--------------------------------//
+// 🧹 Reset state
+//--------------------------------//
+void resetState(int buttonState) {
+  if (buttonState == LOW && timerStartTime == 0 && isMelodyPlaying) {
+    if (!buttonHeld) {
+      buttonPressStart = millis();
+      buttonHeld = true;
+    } else if (millis() - buttonPressStart > buttonHoldTime) {
+      Serial.println("Button held down, stopping melody");
+      isMelodyPlaying = false;
+      timerAlmostDone = false;
+      buttonHeld = false;
+      systemReset = true;
+      digitalWrite(vibrationPin, LOW);
+      ledOff();
+    }
+  } else {
+    buttonHeld = false;
+  }
+}
+// END 🧹 Reset state --------------//
+
+//--------------------------------//
+// Main loop
+//--------------------------------//
+void loop() {
+  updateLEDEffect();
+  playMelody();
+  int buttonState = digitalRead(buttonPin);
+  printDebugInfo(buttonState, isMelodyPlaying, timerStartTime);
+  resetState(buttonState);
+  startTimer(buttonState);
+  playMelodyIfTimerDone();
+  delay(100);
+}
+// END Main loop --------------//
