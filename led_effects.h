@@ -7,15 +7,20 @@
 #define LED_PIN 2
 #endif
 
-// First, declare the enum
+//--------------------------------//
+// 🌈 LED Effects Enum
+//--------------------------------//
 enum LEDEffect {
   OFF,
   BREATHING,
   STEP,
   FLASHING
 };
+// END LED Effects Enum --------------//
 
-// Global variables
+//--------------------------------//
+// 🧮 State management
+//--------------------------------//
 LEDEffect currentEffect = OFF;
 unsigned long lastUpdate = 0;
 int brightness = 0;
@@ -23,22 +28,26 @@ int fadeAmount = 5;
 bool ledState = false;
 int flashInterval = 500;
 int blinkCount = 0;
-int blinkTimes = -1;  // -1 means blink indefinitely
+int blinkTimes = -1;
+// END State management --------------//
 
+//--------------------------------//
+// 📋 Function Declarations
+//--------------------------------//
 // Forward declarations after enum
 void ledOff();
 void setLEDEffect(LEDEffect effect, int interval = 500, int times = -1);
 void ledBreathing();
 void ledStep();
 void ledFlashing(int interval = 500, int times = -1);
+// END Function Declarations --------------//
 
-// Function implementations
+//--------------------------------//
+// ⚙️ Function Implementations
+//--------------------------------//
 void ledOff() {
-  // Force LED off immediately
   digitalWrite(LED_PIN, LOW);
   analogWrite(LED_PIN, 0);
-
-  // Reset all LED-related variables
   currentEffect = OFF;
   brightness = 0;
   ledState = false;
@@ -142,5 +151,6 @@ void ledStep() { setLEDEffect(STEP); }
 void ledFlashing(int interval, int times) {
   setLEDEffect(FLASHING, interval, times);
 }
+// END Function Implementations --------------//
 
 #endif
