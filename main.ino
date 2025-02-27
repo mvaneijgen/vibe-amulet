@@ -9,15 +9,15 @@ const int vibrationPin = 13;
 // END Pin Selection --------------//
 
 //--------------------------------//
-// 🧑‍💻 User prefrences
+// 🧑‍💻 User preferences
 //--------------------------------//
 const int melodyPicked = 0;
 const unsigned long timer = 10000;
 const unsigned long buttonHoldTime = 3000;
-// END User prefrences  --------------//
+// END User preferences  --------------//
 
 //--------------------------------//
-// 🧮 State managment
+// 🧮 State management
 //--------------------------------//
 bool isMelodyPlaying = false;
 bool timerAlmostDone = false;
@@ -25,12 +25,11 @@ unsigned long timerStartTime = 0;
 bool systemReset = false;
 bool initialBlinkingDone = false;
 bool startupComplete = false;
-
 static unsigned long lastVibrationUpdate = 0;
 static bool isVibrating = false;
 static unsigned long buttonPressStart = 0;
 static bool buttonHeld = false;
-// END State managment --------------//
+// END State management --------------//
 
 const unsigned long breathCycle = 2000;
 
