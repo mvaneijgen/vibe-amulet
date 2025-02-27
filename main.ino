@@ -119,12 +119,10 @@ void loop() {
       if (isVibrating && currentMillis - lastVibrationUpdate >= pulseDuration) {
         Serial.println("Timer almost done.");
         ledStep();
-
         digitalWrite(vibrationPin, LOW);
         isVibrating = false;
         lastVibrationUpdate = currentMillis;
-      } else if (!isVibrating &&
-                 currentMillis - lastVibrationUpdate >= pauseDuration) {
+      } else if (!isVibrating && currentMillis - lastVibrationUpdate >= pauseDuration) {
         digitalWrite(vibrationPin, HIGH);
         isVibrating = true;
         lastVibrationUpdate = currentMillis;

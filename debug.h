@@ -4,7 +4,7 @@
 #include <Arduino.h>
 
 unsigned long lastDebugUpdate = 0;
-const unsigned long DEBUG_INTERVAL = 2000; // 2 seconds between updates
+const unsigned long DEBUG_INTERVAL = 2000;
 
 String getFormattedRunningTime() {
   unsigned long currentMillis = millis();
@@ -17,9 +17,8 @@ String getFormattedRunningTime() {
   return String(timeStr);
 }
 
-void printDebugInfo(int buttonState, bool isMelodyPlaying,
-                    unsigned long timerStartTime) {
-  extern bool startup; // Reference the startup variable from main.ino
+void printDebugInfo(int buttonState, bool isMelodyPlaying, unsigned long timerStartTime) {
+  extern bool startup;  // Reference the startup variable from main.ino
 
   unsigned long currentMillis = millis();
   if (currentMillis - lastDebugUpdate >= DEBUG_INTERVAL) {
