@@ -25,7 +25,7 @@ const unsigned long buttonHoldTime = 3000;
 bool isMelodyPlaying = false;
 bool timerAlmostDone = false;
 unsigned long timerStartTime = 0;
-bool systemReset = false;
+bool systemReset = true; // Start in reset state to prevent auto-start
 bool initialBlinkingDone = false;
 bool startupComplete = false;
 static unsigned long lastVibrationUpdate = 0;
@@ -39,7 +39,7 @@ static bool buttonHeld = false;
 //--------------------------------//
 void setup() {
   Serial.begin(115200);
-  pinMode(buttonPin, INPUT);
+  pinMode(buttonPin, INPUT_PULLUP); // Enable internal pull-up resistor
   pinMode(vibrationPin, OUTPUT);
   digitalWrite(vibrationPin, LOW);
 
@@ -58,6 +58,9 @@ void setup() {
     FastLED.show();
     delay(200);
   }
+
+  Serial.println("Vibe Amulet Ready! Press button to start timer.");
+  ledOff(); // Ensure LED is off at startup
 }
 // END Setup  --------------//
 
@@ -66,8 +69,14 @@ void setup() {
 //--------------------------------//
 void startTimer(int buttonState) {
   // Button is open by default (HIGH), closes when pressed (LOW)
-  if (buttonState == LOW && timerStartTime == 0 && !isMelodyPlaying &&
-      !systemReset) {
+  if (buttonState == LOW && timerStartTime == 0 && !isMelodyPlaying) {
+    // Clear reset state on first button press
+    if (systemReset) {
+      systemReset = false;
+      Serial.println("System reset cleared - ready for timer");
+      return; // Don't start timer on this press, just clear reset
+    }
+
     timerStartTime = millis();
     Serial.println("Timer started");
     digitalWrite(vibrationPin, HIGH);

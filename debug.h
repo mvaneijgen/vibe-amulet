@@ -19,7 +19,7 @@ String getFormattedRunningTime() {
 
 void printDebugInfo(int buttonState, bool isMelodyPlaying,
                     unsigned long timerStartTime) {
-  extern bool startup; // Reference the startup variable from main.ino
+  extern bool systemReset; // Reference the systemReset variable from main.ino
 
   unsigned long currentMillis = millis();
   if (currentMillis - lastDebugUpdate >= DEBUG_INTERVAL) {
@@ -34,7 +34,9 @@ void printDebugInfo(int buttonState, bool isMelodyPlaying,
     Serial.print(" | Melody: ");
     Serial.print(isMelodyPlaying ? "Playing" : "Stopped");
     Serial.print(" | Timer: ");
-    Serial.println(timerStartTime != 0 ? "Active" : "Inactive");
+    Serial.print(timerStartTime != 0 ? "Active" : "Inactive");
+    Serial.print(" | Reset: ");
+    Serial.println(systemReset ? "Yes" : "No");
   }
 }
 
