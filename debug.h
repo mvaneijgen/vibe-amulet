@@ -17,8 +17,9 @@ String getFormattedRunningTime() {
   return String(timeStr);
 }
 
-void printDebugInfo(int buttonState, bool isMelodyPlaying, unsigned long timerStartTime) {
-  extern bool startup;  // Reference the startup variable from main.ino
+void printDebugInfo(int buttonState, bool isMelodyPlaying,
+                    unsigned long timerStartTime) {
+  extern bool startup; // Reference the startup variable from main.ino
 
   unsigned long currentMillis = millis();
   if (currentMillis - lastDebugUpdate >= DEBUG_INTERVAL) {
@@ -26,7 +27,10 @@ void printDebugInfo(int buttonState, bool isMelodyPlaying, unsigned long timerSt
 
     Serial.print(getFormattedRunningTime());
     Serial.print(" | Button: ");
-    Serial.print(buttonState == LOW ? "Pressed" : "Released");
+    Serial.print(
+        buttonState == LOW
+            ? "Pressed"
+            : "Released"); // LOW = pressed (closed), HIGH = released (open)
     Serial.print(" | Melody: ");
     Serial.print(isMelodyPlaying ? "Playing" : "Stopped");
     Serial.print(" | Timer: ");

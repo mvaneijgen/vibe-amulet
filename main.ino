@@ -1,11 +1,14 @@
 #include "debug.h"
 #include "led_effects.h"
 #include "melody_player.h"
+#include <FastLED.h>
 //--------------------------------//
 // 📍 Pin Selection
 //--------------------------------//
-const int buttonPin = 0;
-const int vibrationPin = 13;
+const int buttonPin =
+    33; // External button on pin 33 (open by default, closes when pressed)
+const int vibrationPin =
+    32; // 2N2222 transistor base pin for vibration motor control
 // END Pin Selection --------------//
 
 //--------------------------------//
@@ -38,15 +41,21 @@ void setup() {
   Serial.begin(115200);
   pinMode(buttonPin, INPUT);
   pinMode(vibrationPin, OUTPUT);
-  pinMode(LED_PIN, OUTPUT);
   digitalWrite(vibrationPin, LOW);
+
+  // Initialize FastLED
+  FastLED.addLeds<WS2812B, LED_PIN, GRB>(leds, NUM_LEDS);
+  FastLED.setBrightness(BRIGHTNESS);
+
   selectMelody("longBuzz");
 
   // 🚨 Blink a few times when ready
   for (int i = 0; i < 3; i++) {
-    digitalWrite(LED_PIN, HIGH);
+    fill_solid(leds, NUM_LEDS, CRGB::White);
+    FastLED.show();
     delay(200);
-    digitalWrite(LED_PIN, LOW);
+    fill_solid(leds, NUM_LEDS, CRGB::Black);
+    FastLED.show();
     delay(200);
   }
 }
@@ -56,7 +65,9 @@ void setup() {
 // ⏱️ Start timer
 //--------------------------------//
 void startTimer(int buttonState) {
-  if (buttonState == LOW && timerStartTime == 0 && !isMelodyPlaying && !systemReset) {
+  // Button is open by default (HIGH), closes when pressed (LOW)
+  if (buttonState == LOW && timerStartTime == 0 && !isMelodyPlaying &&
+      !systemReset) {
     timerStartTime = millis();
     Serial.println("Timer started");
     digitalWrite(vibrationPin, HIGH);
@@ -90,7 +101,8 @@ void handleTimerAlmostDone(unsigned long remaining) {
     digitalWrite(vibrationPin, LOW);
     isVibrating = false;
     lastVibrationUpdate = currentMillis;
-  } else if (!isVibrating && currentMillis - lastVibrationUpdate >= pauseDuration) {
+  } else if (!isVibrating &&
+             currentMillis - lastVibrationUpdate >= pauseDuration) {
     digitalWrite(vibrationPin, HIGH);
     isVibrating = true;
     lastVibrationUpdate = currentMillis;
@@ -115,6 +127,7 @@ void playMelodyIfTimerDone() {
 // 🧹 Reset state
 //--------------------------------//
 void resetState(int buttonState) {
+  // Button is open by default (HIGH), closes when pressed (LOW)
   if (buttonState == LOW && timerStartTime == 0 && isMelodyPlaying) {
     if (!buttonHeld) {
       buttonPressStart = millis();
