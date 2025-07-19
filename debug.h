@@ -20,6 +20,9 @@ String getFormattedRunningTime() {
 void printDebugInfo(int buttonState, bool isMelodyPlaying,
                     unsigned long timerStartTime) {
   extern bool systemReset; // Reference the systemReset variable from main.ino
+  extern bool buttonHeld;  // Reference the buttonHeld variable from main.ino
+  extern unsigned long
+      buttonPressStart; // Reference the buttonPressStart variable from main.ino
 
   unsigned long currentMillis = millis();
   if (currentMillis - lastDebugUpdate >= DEBUG_INTERVAL) {
@@ -36,7 +39,18 @@ void printDebugInfo(int buttonState, bool isMelodyPlaying,
     Serial.print(" | Timer: ");
     Serial.print(timerStartTime != 0 ? "Active" : "Inactive");
     Serial.print(" | Reset: ");
-    Serial.println(systemReset ? "Yes" : "No");
+    Serial.print(systemReset ? "Yes" : "No");
+
+    // Show button hold progress
+    if (buttonHeld && isMelodyPlaying) {
+      unsigned long holdTime = currentMillis - buttonPressStart;
+      Serial.print(" | Hold: ");
+      Serial.print(holdTime);
+      Serial.print("/");
+      Serial.print(3000); // buttonHoldTime
+    }
+
+    Serial.println();
   }
 }
 

@@ -1,4 +1,4 @@
-  #ifndef MELODY_PLAYER_H
+#ifndef MELODY_PLAYER_H
 #define MELODY_PLAYER_H
 
 #include <Arduino.h>
@@ -6,7 +6,8 @@
 //--------------------------------//
 // 🎶 Possible patterns
 //--------------------------------//
-const unsigned int nokiaSMS[] = {125, 125, 125, 125, 125, 325, 250, 250, 250, 325, 125, 125, 125, 125, 125, 125};
+const unsigned int nokiaSMS[] = {125, 125, 125, 125, 125, 325, 250, 250,
+                                 250, 325, 125, 125, 125, 125, 125, 125};
 const unsigned int morseSOS[] = {150, 150, 150, 450, 450, 450, 150, 150, 150};
 const unsigned int heartbeat[] = {200, 100, 200, 500};
 const unsigned int shortBuzz[] = {100, 50, 100};
@@ -66,7 +67,7 @@ void playMelody() {
 
   if (waitingForNextSequence) {
     if (currentMillis - sequenceStartTime >=
-        2000) {  // Wait 2 seconds between sequences
+        500) { // Reduced wait time between sequences for continuous vibration
       waitingForNextSequence = false;
       melodyIndex = 0;
     }
