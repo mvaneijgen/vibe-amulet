@@ -1,4 +1,4 @@
-#ifndef MELODY_PLAYER_H
+  #ifndef MELODY_PLAYER_H
 #define MELODY_PLAYER_H
 
 #include <Arduino.h>
@@ -28,32 +28,32 @@ bool waitingForNextSequence = false;
 unsigned long sequenceStartTime = 0;
 // END State management --------------//
 
+struct Melody {
+  const char *name;
+  const unsigned int *pattern;
+  unsigned int length;
+};
+
+const Melody melodies[] = {
+    {"nokiaSMS", nokiaSMS, sizeof(nokiaSMS) / sizeof(nokiaSMS[0])},
+    {"morseSOS", morseSOS, sizeof(morseSOS) / sizeof(morseSOS[0])},
+    {"heartbeat", heartbeat, sizeof(heartbeat) / sizeof(heartbeat[0])},
+    {"shortBuzz", shortBuzz, sizeof(shortBuzz) / sizeof(shortBuzz[0])},
+    {"longBuzz", longBuzz, sizeof(longBuzz) / sizeof(longBuzz[0])},
+    {"doubleTap", doubleTap, sizeof(doubleTap) / sizeof(doubleTap[0])},
+    {"alarmAlert", alarmAlert, sizeof(alarmAlert) / sizeof(alarmAlert[0])}};
+
 void selectMelody(const String &melodyName) {
-  if (melodyName == "nokiaSMS") {
-    currentMelody = nokiaSMS;
-    currentMelodyLength = sizeof(nokiaSMS) / sizeof(nokiaSMS[0]);
-  } else if (melodyName == "morseSOS") {
-    currentMelody = morseSOS;
-    currentMelodyLength = sizeof(morseSOS) / sizeof(morseSOS[0]);
-  } else if (melodyName == "heartbeat") {
-    currentMelody = heartbeat;
-    currentMelodyLength = sizeof(heartbeat) / sizeof(heartbeat[0]);
-  } else if (melodyName == "shortBuzz") {
-    currentMelody = shortBuzz;
-    currentMelodyLength = sizeof(shortBuzz) / sizeof(shortBuzz[0]);
-  } else if (melodyName == "longBuzz") {
-    currentMelody = longBuzz;
-    currentMelodyLength = sizeof(longBuzz) / sizeof(longBuzz[0]);
-  } else if (melodyName == "doubleTap") {
-    currentMelody = doubleTap;
-    currentMelodyLength = sizeof(doubleTap) / sizeof(doubleTap[0]);
-  } else if (melodyName == "alarmAlert") {
-    currentMelody = alarmAlert;
-    currentMelodyLength = sizeof(alarmAlert) / sizeof(alarmAlert[0]);
+  for (const Melody &melody : melodies) {
+    if (melodyName == melody.name) {
+      currentMelody = melody.pattern;
+      currentMelodyLength = melody.length;
+      melodyIndex = 0;
+      waitingForNextSequence = false;
+      lastMelodyUpdate = millis();
+      return;
+    }
   }
-  melodyIndex = 0;
-  waitingForNextSequence = false;
-  lastMelodyUpdate = millis();
 }
 
 void playMelody() {
