@@ -33,6 +33,7 @@ static bool isVibrating = false;
 unsigned long buttonPressStart =
     0;                   // Remove static to make it accessible to debug.h
 bool buttonHeld = false; // Remove static to make it accessible to debug.h
+unsigned long restartDelayStart = 0; // Track restart delay timing
 // END State management --------------//
 
 //--------------------------------//
@@ -78,6 +79,11 @@ void setup() {
 void startTimer(int buttonState) {
   // Button is open by default (HIGH), closes when pressed (LOW)
   if (buttonState == LOW && timerStartTime == 0 && !isMelodyPlaying) {
+    // Check if restart delay is active
+    if (millis() - restartDelayStart < 3000) { // 3 second delay
+      return; // Don't start timer during restart delay
+    }
+
     // Clear reset state on first button press
     if (systemReset) {
       systemReset = false;
@@ -103,8 +109,6 @@ void handleTimerElapsed() {
   isMelodyPlaying = true;
   timerStartTime = 0;
   timerAlmostDone = false; // Clear the almost done state
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LOW);
   currentEffect = OFF;
   ledFlashing(200, -1);
   Serial.println("Melody should now be playing continuously!");
@@ -178,6 +182,10 @@ void resetState(int buttonState) {
       systemReset = true;
       digitalWrite(vibrationPin, LOW);
       ledOff();
+
+      // Add restart delay - system won't respond for 3 seconds
+      restartDelayStart = millis();
+      Serial.println("System disabled for 3 seconds - please wait...");
     }
   } else {
     if (buttonHeld) {
@@ -189,6 +197,12 @@ void resetState(int buttonState) {
   // Manual test: Double-press to force melody start (for debugging)
   static bool lastButtonState = HIGH;
   static unsigned long lastPressTime = 0;
+
+  // Check if restart delay is active
+  if (millis() - restartDelayStart < 3000) { // 3 second delay
+    return; // Don't process button presses during restart delay
+  }
+
   if (buttonState == LOW && lastButtonState == HIGH) {
     unsigned long currentTime = millis();
     if (currentTime - lastPressTime < 1000) { // Double press within 1 second
@@ -241,6 +255,18 @@ void loop() {
     if (elapsed > 12000) { // 12 seconds (2 seconds extra)
       Serial.println("EMERGENCY: Timer stuck, forcing melody start!");
       handleTimerElapsed();
+    }
+  }
+
+  // Show restart delay countdown
+  if (millis() - restartDelayStart < 3000) {
+    unsigned long remainingDelay = 3000 - (millis() - restartDelayStart);
+    static unsigned long lastDelayDebug = 0;
+    if (millis() - lastDelayDebug > 1000) { // Every second
+      lastDelayDebug = millis();
+      Serial.print("Restart delay: ");
+      Serial.print(remainingDelay / 1000);
+      Serial.println(" seconds remaining");
     }
   }
 
